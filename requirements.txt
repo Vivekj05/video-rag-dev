@@ -1,0 +1,42 @@
+
+# Audio / Video acquisition
+yt-dlp
+pydub
+ffmpeg-python
+
+# Speech-to-Text (local Whisper)
+openai-whisper
+torch
+torchaudio
+
+# Translation
+deep-translator
+
+# LLM Orchestration
+langchain
+langchain-core
+langchain-community
+langchain-mistralai
+mistralai
+
+# RAG Pipeline
+chromadb
+sentence-transformers
+langchain-huggingface
+huggingface-hub
+tiktoken
+
+# Streamlit UI
+streamlit
+streamlit-extras
+watchdog
+
+# PDF & TXT Export
+reportlab
+fpdf2
+
+# Utilities
+python-dotenv
+numpy
+tqdm
+requests
