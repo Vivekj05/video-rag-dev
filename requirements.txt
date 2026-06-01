@@ -40,3 +40,7 @@ python-dotenv
 numpy
 tqdm
 requests
+
+# API
+fastapi
+uvicorn
