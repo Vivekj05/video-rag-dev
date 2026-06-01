@@ -9,3 +9,7 @@ downloads/
 transcripts/
 notes.txt
 vector_db
+chroma/
+chromadb/
+*.sqlite3
+*.db
