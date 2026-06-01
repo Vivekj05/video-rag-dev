@@ -1,4 +1,5 @@
 import os 
+import re
 from langchain_chroma import Chroma 
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -23,10 +24,15 @@ def build_vector_store(transcript : str)->Chroma:
     )
     chunks = splitter.split_text(transcript)
 
-    docs = [
-        Document(page_content=chunk, metadata = {'chunk_index' : i})
-        for i,chunk in enumerate(chunks)
-    ]
+    # simple regex to find a leading timestamp like [MM:SS] or [HH:MM:SS]
+    ts_re = re.compile(r"\[(\d{1,2}:\d{2}(?::\d{2})?)\]")
+
+    docs = []
+    for i, chunk in enumerate(chunks):
+        m = ts_re.search(chunk)
+        ts = m.group(1) if m else None
+        metadata = {"chunk_index": i, "timestamp": ts}
+        docs.append(Document(page_content=chunk, metadata=metadata))
 
     embeddings = get_embeddings()
     vector_store = Chroma.from_documents(

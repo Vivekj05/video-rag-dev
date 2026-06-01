@@ -54,6 +54,10 @@ if __name__ == "__main__":
     # Phase 2 — Chat with your meeting via RAG
     print("\n💬 Chat with your meeting (type 'exit' to quit)\n")
     rag_chain = result["rag_chain"]
+    # Short-term in-memory chat history to improve follow-up coherence.
+    chat_history = []  # list of {'role': 'user'|'assistant', 'text': str}
+    MAX_HISTORY = 6
+
     while True:
         question = input("You: ").strip()
         if question.lower() in ["exit", "quit", "q"]:
@@ -61,5 +65,17 @@ if __name__ == "__main__":
             break
         if not question:
             continue
-        answer = ask_question(rag_chain, question)
+
+        # append user turn
+        chat_history.append({"role": "user", "text": question})
+
+        # build short context from recent turns
+        recent = chat_history[-MAX_HISTORY:]
+        extra_context = "\n".join(f"{h['role'].capitalize()}: {h['text']}" for h in recent)
+
+        answer = ask_question(rag_chain, question, extra_context=extra_context)
+
+        # append assistant turn
+        chat_history.append({"role": "assistant", "text": answer})
+
         print(f"\n🤖 Assistant: {answer}\n")

@@ -3,6 +3,7 @@ import os
 import time
 import requests
 from pydub import AudioSegment
+from typing import List, Dict, Any, Union
 
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "small")
 
@@ -26,12 +27,13 @@ def load_model():
         _model = whisper.load_model(WHISPER_MODEL)
     return _model
 
-def transcribe_chunk_whisper(chunk_path: str) -> str:
+def transcribe_chunk_whisper(chunk_path: str) -> Dict[str, Any]:
 
-    model = load_model()  
+    model = load_model()
 
-    result = model.transcribe(chunk_path, task="transcribe")  
-    return result["text"]  # type: ignore
+    # Return full Whisper result so callers can access timing segments
+    result = model.transcribe(chunk_path, task="transcribe")
+    return result  # includes 'text' and 'segments'
 
 
 
@@ -120,33 +122,66 @@ def transcribe_chunk_sarvam(chunk_path: str) -> str:
 
     return full_text.strip()
 
-def transcribe_chunk(chunk_path: str, language: str = "english") -> str:
+def transcribe_chunk(chunk_path: str, language: str = "english") -> Union[Dict[str, Any], str]:
     """
     Route one chunk to Whisper or Sarvam depending on language choice.
-    - english  → Whisper (local model)
-    - hinglish → Sarvam (translates to English while transcribing)
+    - english  → Whisper (local model)  -> returns Whisper result dict
+    - hinglish → Sarvam (translates to English while transcribing) -> returns string
     """
     if language.lower() == "hinglish":
         return transcribe_chunk_sarvam(chunk_path)
     return transcribe_chunk_whisper(chunk_path)
 
 
+def _format_ms_to_mmss(ms: int) -> str:
+    seconds = ms // 1000
+    hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    secs = seconds % 60
+    if hours > 0:
+        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
+    return f"{minutes:02d}:{secs:02d}"
+
+
 def transcribe_all(chunks: list, language: str = "english") -> str:
 
-    full_transcript = "" 
+    full_transcript = ""
 
     engine = "Sarvam AI" if language.lower() == "hinglish" else "Whisper"
     print(f"Using {engine} for transcription.")
 
-    for i, chunk in enumerate(chunks):  
+    current_offset_ms = 0
+
+    for i, chunk_path in enumerate(chunks):
 
         print(f"Transcribing chunk {i + 1}/{len(chunks)}...")
 
-        text = transcribe_chunk(chunk, language=language)  
+        # measure chunk duration so we can offset segment start/end times
+        try:
+            audio = AudioSegment.from_wav(chunk_path)
+            chunk_duration_ms = len(audio)
+        except Exception:
+            chunk_duration_ms = 0
 
-        full_transcript += text + " "  
+        result = transcribe_chunk(chunk_path, language=language)
+
+        # Whisper returns a dict with segments; Sarvam returns a plain string.
+        if isinstance(result, dict) and "segments" in result:
+            for seg in result.get("segments", []):
+                # Whisper segments report times in seconds; convert and offset
+                seg_start_ms = int(seg.get("start", 0) * 1000) + current_offset_ms
+                seg_text = seg.get("text", "").strip()
+                timestamp = _format_ms_to_mmss(seg_start_ms)
+                full_transcript += f"[{timestamp}] {seg_text} "
+        else:
+            # Fallback: prefix the chunk's entire text with the chunk start timestamp
+            timestamp = _format_ms_to_mmss(current_offset_ms)
+            text = result if isinstance(result, str) else str(result)
+            full_transcript += f"[{timestamp}] {text} "
+
+        current_offset_ms += chunk_duration_ms
 
     print("Transcription complete.")
 
-    return full_transcript.strip()   
+    return full_transcript.strip()
         

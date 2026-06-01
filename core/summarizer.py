@@ -1,6 +1,7 @@
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_mistralai import ChatMistralAI
+from pydantic import SecretStr
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 
@@ -9,7 +10,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 def get_llm():
-    return ChatMistralAI(model_name = "mistral-small-latest", mistral_api_key = os.getenv("MISTRAL_API_KEY"),temperature=0.3)
+    _key = os.getenv("MISTRAL_API_KEY")
+    api_key = SecretStr(_key) if _key is not None else None
+    return ChatMistralAI(model_name = "mistral-small-latest", api_key = api_key, temperature=0.3)
 
 def split_transcript(transcript: str) -> list:
     splitter = RecursiveCharacterTextSplitter(
