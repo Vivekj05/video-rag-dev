@@ -4,7 +4,7 @@ from core.transcriber import transcribe_all
 from core.summarizer import summarize, generate_title
 from core.extractor import extract_action_items, extract_key_decisions, extract_questions
 from core.rag_engine import build_rag_chain, ask_question
-
+from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 
@@ -16,16 +16,21 @@ def run_pipeline(source :str, language :str = "english") -> dict:
     transcript = transcribe_all(chunks,language)
     print(f"raw transcription (first 300 characters ) {transcript[:300]}")
 
-    title = generate_title(transcript)
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        f_title     = executor.submit(generate_title, transcript)
+        f_summary   = executor.submit(summarize, transcript)
+        f_actions   = executor.submit(extract_action_items, transcript)
+        f_decisions = executor.submit(extract_key_decisions, transcript)
+        f_questions = executor.submit(extract_questions, transcript)
+        f_rag       = executor.submit(build_rag_chain, transcript)
 
-    summary = summarize(transcript)
+        title     = f_title.result()
+        summary   = f_summary.result()
+        action_item = f_actions.result()
+        decisions = f_decisions.result()
+        questions = f_questions.result()
+        rag_chain = f_rag.result()
 
-    action_item = extract_action_items(transcript)
-
-    decisions = extract_key_decisions(transcript)
-    questions = extract_questions(transcript)
-    
-    rag_chain = build_rag_chain(transcript)
 
     return {
         "title": title,

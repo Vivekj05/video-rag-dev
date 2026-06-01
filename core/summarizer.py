@@ -9,6 +9,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+from concurrent.futures import ThreadPoolExecutor
+
 def get_llm():
     _key = os.getenv("MISTRAL_API_KEY")
     api_key = SecretStr(_key) if _key is not None else None
@@ -35,7 +37,8 @@ def summarize(transcript: str) -> str:
 
     chunks = split_transcript(transcript)
 
-    chunk_summaries = [map_chain.invoke({"text": chunk}) for chunk in chunks]
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        chunk_summaries = list(executor.map(lambda chunk: map_chain.invoke({"text": chunk}), chunks))
 
     combined = "\n\n".join(chunk_summaries)
 
