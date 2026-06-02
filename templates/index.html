@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Video Intelligence Assistant</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="brand">🎥 <span class="brand-name">Video Intelligence</span></div>
+        <nav class="nav">
+            <a href="#">Home</a>
+            <a href="#results">Results</a>
+            <a href="#chatSection">Chat</a>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+
+    <section class="left-panel">
+
+        <div class="card input-card" aria-labelledby="analyzeHeading">
+            <h2 id="analyzeHeading">Analyze a Video</h2>
+
+            <label class="field">
+                <span class="label">YouTube URL</span>
+                <input id="source" type="text" placeholder="Paste YouTube URL or video ID">
+            </label>
+
+            <label class="field">
+                <span class="label">Language</span>
+                <select id="language">
+                    <option value="english">English</option>
+                    <option value="hinglish">Hinglish</option>
+                </select>
+            </label>
+
+            <div id="dropZone" class="drop-zone">Drag & drop a video file here (optional)</div>
+
+            <div class="controls">
+                <button id="analyzeBtn" class="btn primary" onclick="processVideo()">Analyze Video</button>
+                <button id="clearBtn" class="btn" onclick="clearAll()">Clear</button>
+            </div>
+
+            <div id="loader" class="loader hidden" role="status" aria-live="polite">
+                <div class="spinner" aria-hidden="true"></div>
+                <div class="loader-text">Processing...</div>
+                <progress id="progressBar" value="0" max="100"></progress>
+            </div>
+
+        </div>
+
+        <div class="card info-card">
+            <h3>Tips</h3>
+            <ul>
+                <li>Paste a public YouTube URL for fastest processing.</li>
+                <li>Use the chat to query specific timestamps or sections.</li>
+            </ul>
+        </div>
+
+    </section>
+
+    <section class="right-panel">
+
+        <div id="chatSection" class="card chat-section hidden">
+            <h2>Chat with Video</h2>
+            <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+            <div class="chat-input">
+                <input id="question" type="text" placeholder="Ask anything about the video...">
+                <button class="btn primary" onclick="sendQuestion()">Send</button>
+            </div>
+        </div>
+
+        <div class="results-header">
+            <input id="searchBox" type="search" placeholder="Search within results...">
+            <div id="searchCount" class="search-count"></div>
+        </div>
+
+        <div id="results" class="results"></div>
+
+    </section>
+
+</main>
+
+<footer class="footer">
+    Built with ❤️ — Video Intelligence Assistant
+</footer>
+
+<script src="/static/app.js"></script>
+
+</body>
+</html>

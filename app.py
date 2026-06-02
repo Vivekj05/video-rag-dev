@@ -7,11 +7,19 @@ from pydantic import BaseModel, Field
 from main import run_pipeline
 from core.rag_engine import ask_question
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
 
 app = FastAPI(title="Video RAG API", version="0.1.0")
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+templates = Jinja2Templates(directory="templates")
+
 # In-memory session store (simple, minimal approach)
 SESSIONS: Dict[str, Dict[str, Any]] = {}
+
 
 
 class PipelineRequest(BaseModel):
@@ -23,6 +31,12 @@ class ChatRequest(BaseModel):
     session_id: str
     question: str
 
+@app.get("/")
+def home(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html"
+    )
 
 @app.get("/health")
 def health() -> Dict[str, str]:
