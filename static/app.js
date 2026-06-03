@@ -71,8 +71,10 @@ async function processVideo(){
         sections.forEach(s=>{
             const card = document.createElement('div');
             card.className = 'card';
-            const content = (s.content && String(s.content).trim()) ? s.content : `No ${s.title.replace(/[^a-zA-Z ]/g,'').toLowerCase()} found.`;
-            card.innerHTML = `<h3>${escapeHtml(s.title)}</h3><p>${escapeHtml(content)}</p>`;
+            const raw = (s.content && String(s.content).trim()) ? s.content : `No ${s.title.replace(/[^a-zA-Z ]/g,'').toLowerCase()} found.`;
+            // escape and preserve newlines for better readability
+            const escaped = escapeHtml(raw).replace(/\n/g, '<br>');
+            card.innerHTML = `<h3>${escapeHtml(s.title)}</h3><div class="card-content">${escaped}</div>`;
             results.appendChild(card);
         });
 

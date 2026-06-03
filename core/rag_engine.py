@@ -6,6 +6,23 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from core.vector_store import build_vector_store, load_vector_store, get_retriever
 
+ANSWER_PROMPT = ChatPromptTemplate.from_messages([
+    (
+        "system",
+        """You are an expert assistant. Answer the user's question based ONLY on the transcript context provided below.
+
+If the answer is not found in the context, say: "I could not find this information in the transcript."
+
+Always be concise and precise. If quoting someone, mention it clearly.
+
+After your concise answer, include a short 'Sources:' section listing up to 3 citations in the form [MM:SS] <one-line snippet> drawn from the provided context. If no relevant source exists, write 'Sources: None'.
+
+Context from transcript:
+{context}""",
+    ),
+    ("human", "{question}"),
+])
+
 def get_llm():
     _key = os.getenv("MISTRAL_API_KEY")
     api_key = SecretStr(_key) if _key is not None else None
@@ -31,6 +48,29 @@ def format_docs(docs):
         else:
             parts.append(doc.page_content)
     return "\n\n".join(parts)
+
+
+def _retrieve_docs(retriever, question: str):
+    """Return retrieved documents across LangChain retriever variants."""
+    if retriever is None:
+        return []
+
+    # Newer retrievers are Runnable-like and expose invoke().
+    if hasattr(retriever, "invoke"):
+        docs = retriever.invoke(question)
+        return docs or []
+
+    # Older retrievers may expose get_relevant_documents().
+    if hasattr(retriever, "get_relevant_documents"):
+        docs = retriever.get_relevant_documents(question)
+        return docs or []
+
+    # Very old/internal API fallback.
+    if hasattr(retriever, "_get_relevant_documents"):
+        docs = retriever._get_relevant_documents(question)
+        return docs or []
+
+    return []
 
 def build_rag_chain(transcript:str):
 
@@ -69,7 +109,9 @@ Context from transcript:
          |prompt|llm|StrOutputParser()
     )
 
-    return rag_chain
+    # Return both the runnable chain and the retriever so callers can
+    # augment retrieved docs with short-term chat history when needed.
+    return {"rag_chain": rag_chain, "retriever": retriever}
 
 
 def load_rag_chain():
@@ -104,7 +146,7 @@ Context from transcript:
         | StrOutputParser()
     )
 
-    return rag_chain
+    return {"rag_chain": rag_chain, "retriever": retriever}
 
 
 def ask_question(rag_chain, question: str, extra_context: str | None = None) -> str:
@@ -115,15 +157,38 @@ def ask_question(rag_chain, question: str, extra_context: str | None = None) -> 
     """
     print(f"Question : {question}")
 
-    if extra_context:
-        # pass both question and context so the chain can use them directly
+    # Support two shapes for rag_chain: the old-style runnable, or the
+    # new dict containing {'rag_chain': runnable, 'retriever': retriever}.
+    chain = rag_chain
+    retriever = None
+    if isinstance(rag_chain, dict) and 'rag_chain' in rag_chain:
+        chain = rag_chain['rag_chain']
+        retriever = rag_chain.get('retriever')
+
+    # Build an explicit context block so the model sees both transcript evidence
+    # and recent chat turns, without passing a dict into the retriever chain.
+    if retriever:
         try:
-            answer = rag_chain.invoke({"question": question, "context": extra_context})
-        except Exception:
-            # fallback to invoking with question only
-            answer = rag_chain.invoke(question)
+            docs = _retrieve_docs(retriever, question)
+            context = format_docs(docs)
+            if extra_context:
+                context = context + "\n\nChat history:\n" + extra_context
+
+            llm = get_llm()
+            answer_chain = ANSWER_PROMPT | llm | StrOutputParser()
+            answer = answer_chain.invoke({"context": context, "question": question})
+        except Exception as exc:
+            print("RAG answer path failed, falling back:", exc)
+            try:
+                answer = chain.invoke(question)
+            except Exception:
+                answer = chain.invoke({"question": question})
     else:
-        answer = rag_chain.invoke(question)
+        # Fallback for older callers: use the runnable chain directly.
+        try:
+            answer = chain.invoke(question)
+        except Exception:
+            answer = chain.invoke({"question": question})
 
     # If the model appended a Sources: section, print it separately for clarity.
     if isinstance(answer, str) and "Sources:" in answer:

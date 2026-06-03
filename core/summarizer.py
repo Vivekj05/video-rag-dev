@@ -57,7 +57,35 @@ def summarize(transcript: str) -> str:
         RunnablePassthrough() | RunnableLambda(lambda x:{"text":x}) | combined_prompt | llm | StrOutputParser()
     )
 
-    return combined_chain.invoke(combined)
+    raw = combined_chain.invoke(combined)
+
+    # Post-process the model output to ensure readable paragraphs and simple bullets
+    import re
+
+    def tidy(text: str) -> str:
+        if not text:
+            return ""
+        # normalize newlines
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+
+        # remove excessive markdown bold markers which often inline text
+        text = text.replace('**', '')
+
+        # convert markdown headings into paragraph breaks
+        text = re.sub(r"#{1,6}\s*", "\n\n", text)
+
+        # ensure list items start on their own line and use a simple '-' marker
+        text = re.sub(r"\n?\s*[-*\u2022]\s+", "\n- ", text)
+
+        # collapse 3+ newlines into two
+        text = re.sub(r"\n{3,}", "\n\n", text)
+
+        # trim leading/trailing whitespace
+        text = text.strip()
+
+        return text
+
+    return tidy(raw)
 
 def generate_title(transcipt : str) -> str:
     llm = get_llm()
