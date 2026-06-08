@@ -1,0 +1,42 @@
+# Rename this file to .dockerignore before building
+
+# Python cache — auto-generated, never needed in container
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environment — container has its own isolated Python
+venv/
+.venv/
+env/
+
+# ChromaDB data — mounted as volume at runtime
+vector_db/
+
+# Downloaded videos/audio — mounted as volume at runtime
+downloads/
+
+# Screenshots and docs — not needed in production
+screenshots/
+*.md
+notes.txt
+
+# Secrets — CRITICAL: never bake credentials into an image
+.env
+*.env
+
+# Git history
+.git/
+.gitignore
+
+# Editor configs
+.vscode/
+.idea/
+*.DS_Store
+
+# Test files
+test.py
+tests/
+
+# HuggingFace model cache (large, mounted as volume instead)
+.cache/

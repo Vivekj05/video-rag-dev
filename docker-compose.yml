@@ -1,0 +1,107 @@
+
+
+# ==============================================================
+# VideoRag — Docker Compose
+# FastAPI + faster-whisper + ChromaDB + Mistral + HTML/CSS/JS UI
+#
+# Commands:
+#   Start:          docker compose up --build
+#   Start (bg):     docker compose up -d --build
+#   Stop:           docker compose down
+#   Logs:           docker compose logs -f videorag
+#   Shell access:   docker exec -it videorag_app bash
+# ==============================================================
+
+services:
+
+  videorag:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: videorag_app
+
+    # Host port 8000 → Container port 8000
+    # Access at: http://localhost:8000
+    ports:
+      - "8000:8000"
+
+    # Loads MISTRAL_API_KEY and WHISPER_MODEL from your .env file
+    # NEVER hardcode secrets in this file — .env stays out of git
+    env_file:
+      - .env
+
+    environment:
+      - WHISPER_MODEL=${WHISPER_MODEL:-small}
+      - CHROMA_DB_PATH=/app/vector_db
+      - HF_HOME=/root/.cache/huggingface
+
+    volumes:
+      # ── Persistent data volumes ──────────────────────────────
+      #
+      # chroma_data: ChromaDB vector embeddings
+      #   Without this → all processed videos lose their embeddings on restart
+      - chroma_data:/app/vector_db
+
+      # huggingface_cache: sentence-transformers embedding model (~500MB)
+      #   Without this → model re-downloads every container restart
+      - huggingface_cache:/root/.cache/huggingface
+
+      # whisper_cache: faster-whisper model weights (~500MB for "small")
+      #   Without this → Whisper re-downloads every container restart
+      - whisper_cache:/root/.cache/whisper
+
+      # downloads: temp video/audio files during processing
+      #   Keeps large video files off the container filesystem
+      - downloads_data:/app/downloads
+
+    # GPU access configuration
+    # Uncomment this block if your host has an NVIDIA GPU + NVIDIA Container Toolkit installed
+    # Without this, faster-whisper falls back to CPU (slower but still works)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+    # Memory limits — adjust based on your machine
+    # Whisper small + ChromaDB + Mistral API calls needs ~3-4GB
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+        reservations:
+          memory: 2G
+
+    # Auto-restart unless you manually run docker compose down
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 90s    # Models take time to load on first boot
+
+
+# ==============================================================
+# Named Volumes
+#
+# These live on your HOST machine, managed by Docker.
+# Data persists across: container restarts, rebuilds, and
+# even `docker compose down` (only lost with `docker compose down -v`)
+# ==============================================================
+volumes:
+  chroma_data:
+    driver: local
+
+  huggingface_cache:
+    driver: local
+
+  whisper_cache:
+    driver: local
+
+  downloads_data:
+    driver: local
