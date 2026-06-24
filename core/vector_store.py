@@ -20,12 +20,12 @@ def get_embeddings():
         )
     return _embeddings
 
-def build_vector_store(transcript : str)->Chroma:
+def build_vector_store(transcript : str, collection_name: str = COLLECTION_NAME)->Chroma:
     print("Building vector Store")
 
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size = 500,
-        chunk_overlap = 50
+        chunk_size = 1000,
+        chunk_overlap = 150
     )
     chunks = splitter.split_text(transcript)
 
@@ -43,7 +43,7 @@ def build_vector_store(transcript : str)->Chroma:
     vector_store = Chroma.from_documents(
         documents= docs,
         embedding=embeddings,
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         persist_directory=CHROMA_DIR
     )
 
@@ -51,10 +51,10 @@ def build_vector_store(transcript : str)->Chroma:
 
 
 
-def load_vector_store() ->Chroma:
+def load_vector_store(collection_name: str = COLLECTION_NAME) ->Chroma:
     embeddings = get_embeddings()
     vector_store = Chroma(
-        collection_name=COLLECTION_NAME,
+        collection_name=collection_name,
         embedding_function= embeddings,
         persist_directory=CHROMA_DIR
     )

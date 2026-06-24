@@ -45,9 +45,9 @@ def health() -> Dict[str, str]:
 
 @app.post("/pipeline")
 def create_pipeline(req: PipelineRequest) -> Dict[str, Any]:
-    result = run_pipeline(req.source, req.language)
-
     session_id = str(uuid4())
+    result = run_pipeline(req.source, req.language, session_id=session_id)
+
     rag_chain = result["rag_chain"]
 
     # Keep chain and short-term history in memory for chat follow-ups.

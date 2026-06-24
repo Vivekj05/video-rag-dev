@@ -8,8 +8,13 @@ from concurrent.futures import ThreadPoolExecutor
 
 load_dotenv()
 
-def run_pipeline(source :str, language :str = "english") -> dict:
+def run_pipeline(source :str, language :str = "english", session_id: str = None) -> dict:
     print("starting AI Video Assistant")
+
+    if session_id is None:
+        import uuid
+        session_id = str(uuid.uuid4())
+    collection_name = f"session_{session_id}"
 
     chunks = process_input(source)
 
@@ -22,7 +27,7 @@ def run_pipeline(source :str, language :str = "english") -> dict:
         f_actions   = executor.submit(extract_action_items, transcript)
         f_decisions = executor.submit(extract_key_decisions, transcript)
         f_questions = executor.submit(extract_questions, transcript)
-        f_rag       = executor.submit(build_rag_chain, transcript)
+        f_rag       = executor.submit(build_rag_chain, transcript, collection_name=collection_name)
 
         title     = f_title.result()
         summary   = f_summary.result()

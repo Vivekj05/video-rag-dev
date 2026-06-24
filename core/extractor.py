@@ -38,11 +38,11 @@ def extract_action_items(transcript:str)->str:
 
 def extract_key_decisions(transcript: str) -> str:
     chain = build_chain(
-        "You are an expert analyst. From the transcript (video, audio, or recording), extract only FIRM key decisions (not proposals or tentative agreements). A key decision is an explicit choice that affects scope, timeline, budget, or responsibilities.\n\n"
+        "You are an expert analyst. From the transcript (video, audio, or recording), extract all key decisions, agreements, consensus points, conclusions, or choices reached by the speakers (such as technological choices, next steps, finalized opinions, or resolved issues).\n\n"
         "For EACH decision return the following EXACTLY in this format:\n"
         "[DECISION]: <concise decision statement>\n"
         "[RATIONALE]: <1-2 sentence reason or context>\n"
-        "[STAKEHOLDERS]: <names of approver(s) or 'Not specified'>\n"
+        "[STAKEHOLDERS]: <names of approver(s), person proposing, or 'Not specified'>\n"
         "[TIMESTAMP]: <MM:SS if present in transcript, else 'Not specified'>\n"
         "[IMPACT]: STRATEGIC | TACTICAL\n"
         "[CONFIDENCE]: <0-100 percent confidence>\n\n"
@@ -53,12 +53,12 @@ def extract_key_decisions(transcript: str) -> str:
 
 def extract_questions(transcript: str) -> str:
     chain = build_chain(
-        "From the transcript (video, audio, or recording), extract UNRESOLVED questions or topics that NEED FOLLOW-UP (exclude rhetorical or immediately-answered questions).\n\n"
-        "For EACH unresolved question return the following EXACTLY in this format:\n"
+        "From the transcript (video, audio, or recording), extract key questions asked or significant topics raised that required discussion, focusing especially on unresolved questions or topics needing follow-up (you may also include key questions that were discussed and answered if they were central to the topic, but note their resolution status in the context).\n\n"
+        "For EACH question return the following EXACTLY in this format:\n"
         "[QUESTION]: <the exact question or topic>\n"
         "[ASKED_BY]: <person or 'Not specified'>\n"
         "[TIMESTAMP]: <MM:SS if present in transcript, else 'Not specified'>\n"
-        "[CONTEXT]: <1-2 sentence context>\n"
+        "[CONTEXT]: <1-2 sentence context, noting whether it was answered or remains unresolved>\n"
         "[PRIORITY]: HIGH | MEDIUM | LOW\n"
         "[CONFIDENCE]: <0-100 percent confidence>\n\n"
         "Return a numbered list. If none found, output exactly: No open questions found."

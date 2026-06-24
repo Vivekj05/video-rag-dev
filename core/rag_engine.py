@@ -11,7 +11,7 @@ ANSWER_PROMPT = ChatPromptTemplate.from_messages([
         "system",
         """You are an expert assistant. Answer the user's question based ONLY on the transcript context provided below.
 
-If the answer is not found in the context, say: "I could not find this information in the transcript."
+If the answer is not directly in the context but can be reasonably inferred or uses synonyms, answer it accurately. If the information is completely missing, say: "I could not find this information in the transcript."
 
 Always be concise and precise. If quoting someone, mention it clearly.
 
@@ -72,11 +72,11 @@ def _retrieve_docs(retriever, question: str):
 
     return []
 
-def build_rag_chain(transcript:str):
+def build_rag_chain(transcript:str, collection_name: str = "meeting_transcript"):
 
-    vector_store = build_vector_store(transcript)
+    vector_store = build_vector_store(transcript, collection_name=collection_name)
 
-    retriever = get_retriever(vector_store, k = 4)
+    retriever = get_retriever(vector_store, k = 6)
 
     llm = get_llm()
 
@@ -86,7 +86,7 @@ def build_rag_chain(transcript:str):
             "system",
             """You are an expert assistant. Answer the user's question based ONLY on the transcript context provided below.
 
-If the answer is not found in the context, say: "I could not find this information in the transcript."
+If the answer is not directly in the context but can be reasonably inferred or uses synonyms, answer it accurately. If the information is completely missing, say: "I could not find this information in the transcript."
 
 Always be concise and precise. If quoting someone, mention it clearly.
 
@@ -114,9 +114,9 @@ Context from transcript:
     return {"rag_chain": rag_chain, "retriever": retriever}
 
 
-def load_rag_chain():
-    vector_store = load_vector_store()
-    retriever = get_retriever(vector_store, k=4)
+def load_rag_chain(collection_name: str = "meeting_transcript"):
+    vector_store = load_vector_store(collection_name=collection_name)
+    retriever = get_retriever(vector_store, k=6)
 
     llm = get_llm()
     prompt = ChatPromptTemplate.from_messages([
@@ -124,7 +124,7 @@ def load_rag_chain():
             "system",
             """You are an expert assistant. Answer the user's question based ONLY on the transcript context provided below.
 
-If the answer is not found in the context, say: "I could not find this information in the transcript."
+If the answer is not directly in the context but can be reasonably inferred or uses synonyms, answer it accurately. If the information is completely missing, say: "I could not find this information in the transcript."
 
 Always be concise and precise. If quoting someone, mention it clearly.
 
@@ -197,7 +197,7 @@ def ask_question(rag_chain, question: str, extra_context: str | None = None) -> 
         sources_text = parts[1].strip()
         print(f"answer : {ans_text}")
         print("\nSources:" + sources_text)
-        return ans_text
+        return f"{ans_text}\n\nSources:\n{sources_text}"
 
     print(f"answer :{answer}")
     return answer
