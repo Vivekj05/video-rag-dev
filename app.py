@@ -1,7 +1,9 @@
 from uuid import uuid4
 from typing import Dict, Any, List
 
-from fastapi import FastAPI, HTTPException
+import os
+import shutil
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel, Field
 
 from main import run_pipeline
@@ -41,6 +43,18 @@ def home(request: Request):
 @app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "ok"}
+
+
+@app.post("/upload")
+def upload_file(file: UploadFile = File(...)) -> Dict[str, str]:
+    try:
+        os.makedirs("downloads", exist_ok=True)
+        dest_path = os.path.join("downloads", file.filename)
+        with open(dest_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        return {"filepath": dest_path}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/pipeline")

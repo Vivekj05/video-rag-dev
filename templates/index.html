@@ -5,7 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Video Intelligence Assistant</title>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="/static/style.css">
+        <link rel="stylesheet" href="/static/style.css?v=6">
 </head>
 <body>
 
@@ -25,11 +25,11 @@
     <section class="left-panel">
 
         <div class="card input-card" aria-labelledby="analyzeHeading">
-            <h2 id="analyzeHeading">Analyze a Video</h2>
+            <h2 id="analyzeHeading">Analyze Video</h2>
 
             <label class="field">
-                <span class="label">YouTube URL</span>
-                <input id="source" type="text" placeholder="Paste YouTube URL or video ID">
+                <span class="label">YouTube URL or Path</span>
+                <input id="source" type="text" placeholder="Paste YouTube URL or file path">
             </label>
 
             <label class="field">
@@ -40,26 +40,37 @@
                 </select>
             </label>
 
-            <div id="dropZone" class="drop-zone">Drag & drop a video file here (optional)</div>
+            <div id="dropZone" class="drop-zone">Drag & drop video / audio file here, or click to browse</div>
+            <input type="file" id="fileInput" class="hidden">
 
             <div class="controls">
-                <button id="analyzeBtn" class="btn primary" onclick="processVideo()">Analyze Video</button>
+                <button id="analyzeBtn" class="btn primary" onclick="processVideo()">Analyze</button>
                 <button id="clearBtn" class="btn" onclick="clearAll()">Clear</button>
             </div>
 
             <div id="loader" class="loader hidden" role="status" aria-live="polite">
-                <div class="spinner" aria-hidden="true"></div>
-                <div class="loader-text">Processing...</div>
+                <div id="spinner" class="spinner" aria-hidden="true"></div>
+                <div id="loaderText" class="loader-text">Processing...</div>
                 <progress id="progressBar" value="0" max="100"></progress>
             </div>
 
         </div>
 
-        <div class="card info-card">
+        <div id="chatSection" class="card chat-section hidden">
+            <h2>💬 Chat with Video</h2>
+            <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+            <div class="chat-input">
+                <input id="question" type="text" placeholder="Ask about the video...">
+                <button class="btn primary" onclick="sendQuestion()">Send</button>
+            </div>
+        </div>
+
+        <div class="card info-card tips-card">
             <h3>Tips</h3>
             <ul>
-                <li>Paste a public YouTube URL for fastest processing.</li>
-                <li>Use the chat to query specific timestamps or sections.</li>
+                <li>Enter any YouTube URL for cloud processing.</li>
+                <li>Drag and drop a local WAV/MP4/MP3 to transcribe locally.</li>
+                <li>Click timestamps in the results to quickly search that topic.</li>
             </ul>
         </div>
 
@@ -67,21 +78,39 @@
 
     <section class="right-panel">
 
-        <div id="chatSection" class="card chat-section hidden">
-            <h2>Chat with Video</h2>
-            <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
-            <div class="chat-input">
-                <input id="question" type="text" placeholder="Ask anything about the video...">
-                <button class="btn primary" onclick="sendQuestion()">Send</button>
+        <!-- Welcome Card (Initial State) -->
+        <div id="welcomeCard" class="card welcome-card">
+            <div class="icon">🎬</div>
+            <h2>Video Intelligence Dashboard</h2>
+            <p>Paste a YouTube link or drag a local recording on the left to transcribe, summarize, and extract actionable insights instantly.</p>
+        </div>
+
+        <!-- Results Card (Active State) -->
+        <div id="resultsCard" class="card results-container hidden">
+            <h1 id="resultsTitle">📋 Video Analysis Results</h1>
+            
+            <nav class="tabs-nav" role="tablist">
+                <button class="tab-btn active" onclick="switchTab('summary')" role="tab" aria-selected="true" id="tab-summary">
+                    📄 Summary
+                </button>
+                <button class="tab-btn" onclick="switchTab('action_items')" role="tab" id="tab-action_items">
+                    ✅ Actions <span id="badge-action_items" class="tab-badge">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('key_decisions')" role="tab" id="tab-key_decisions">
+                    🎯 Decisions <span id="badge-key_decisions" class="tab-badge">0</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('open_questions')" role="tab" id="tab-open_questions">
+                    ❓ Questions <span id="badge-open_questions" class="tab-badge">0</span>
+                </button>
+            </nav>
+
+            <div class="results-header">
+                <input id="searchBox" type="search" placeholder="Search within active tab...">
+                <div id="searchCount" class="search-count"></div>
             </div>
-        </div>
 
-        <div class="results-header">
-            <input id="searchBox" type="search" placeholder="Search within results...">
-            <div id="searchCount" class="search-count"></div>
+            <div id="tabContent" class="tab-pane"></div>
         </div>
-
-        <div id="results" class="results"></div>
 
     </section>
 
@@ -91,7 +120,7 @@
     Built with ❤️ — Video Intelligence Assistant
 </footer>
 
-<script src="/static/app.js"></script>
+<script src="/static/app.js?v=6"></script>
 
 </body>
 </html>
