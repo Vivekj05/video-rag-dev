@@ -14,7 +14,7 @@ def download_youtube_audio(url :str) ->str:
         "postprocessors": [
             {
                 "key": "FFmpegExtractAudio",
-                "preferredcodec": "wav",
+                "preferredcodec": "mp3",
                 "preferredquality": "192",
             }
         ],
@@ -22,7 +22,7 @@ def download_youtube_audio(url :str) ->str:
     }
     with yt_dlp.YoutubeDL(cast(Any, ydl_opts)) as ydl:
         info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info).replace(".webm", ".wav").replace(".m4a", ".wav")
+        filename = ydl.prepare_filename(info).replace(".webm", ".mp3").replace(".m4a", ".mp3")
     return filename
 
 
@@ -53,12 +53,10 @@ def chunk_audio(wav_path : str , chunk_minutes : int = 10) -> list:
 def process_input(source: str) -> list:
     if source.startswith("http://") or source.startswith("https://"):
         print("Detected YouTube URL. Downloading audio...")
-        wav_path = download_youtube_audio(source)
+        audio_path = download_youtube_audio(source)
     else:
         print("Detected local file. Converting to WAV...")
-        wav_path = convert_to_wav(source)
+        audio_path = convert_to_wav(source)
 
-    print("Chunking audio...")
-    chunks = chunk_audio(wav_path)
-    print(f"Audio ready — {len(chunks)} chunk(s) created.")
-    return chunks
+    print("Audio ready — 1 file to transcribe.")
+    return [audio_path]

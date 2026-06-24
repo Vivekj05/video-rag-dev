@@ -35,7 +35,7 @@ def load_model():
 def transcribe_chunk_whisper(chunk_path: str, translate_to_english: bool = False) -> Dict[str, Any]:
     model = load_model()
     task = "translate" if translate_to_english else "transcribe"
-    segments, _ = model.transcribe(chunk_path, task=task)
+    segments, _ = model.transcribe(chunk_path, task=task, beam_size=2, vad_filter=True)
     return {"segments": [{"start": s.start, "text": s.text} for s in segments]}
 
 
@@ -155,7 +155,7 @@ def transcribe_all(chunks: list, language: str = "english") -> str:
 
         # measure chunk duration so we can offset segment start/end times
         try:
-            audio = AudioSegment.from_wav(chunk_path)
+            audio = AudioSegment.from_file(chunk_path)
             chunk_duration_ms = len(audio)
         except Exception:
             chunk_duration_ms = 0
